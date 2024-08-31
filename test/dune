@@ -1,2 +1,6 @@
-(test
+(library
+ (libraries ocm)
+ (preprocess
+  (pps  ppx_inline_test ppx_expect))
+ (inline_tests)
  (name test_ocm))
