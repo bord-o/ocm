@@ -60,6 +60,7 @@ type rhs = Expr of expr | Hole [@@deriving show]
 type pattern = id * constructor list * rhs [@@deriving show]
 type fn = id * typ * pattern list [@@deriving show]
 type prog = typdef list * fn list * expr [@@deriving show]
+type env = (id * expr) list [@@deriving show]
 
 let rec lookup_func s = function
   | [] -> None
@@ -77,21 +78,28 @@ type value = id * expr
 
 let rec first_match predicate = function
   | [] -> None
-  | x :: xs -> if predicate x then Some x else first_match predicate xs
+  | x :: xs ->
+      let matches, env = predicate x in
+      if matches then Option.bind env (fun e -> Some (e, x))
+      else first_match predicate xs
 
+(* tries to match args to a pattern, if successful, return the bindings *)
+(* TODO: Refactor this to return option *)
 
-let rec matches (args : expr list) (cons : constructor list) (env : (id*expr) list) =
+let rec matches (args : expr list) (cons : constructor list) (env : env) =
   match (args, cons) with
-  | [], [] -> List.iter (fun (id,expr) -> Printf.printf "Binding: %s to %s\n" id (show_expr expr) ) env; true
-  | Val (vid, vargs) :: xs, Binder id :: ys -> matches xs ys ((id, Val(vid, vargs)) ::env)
+  (* List.iter (fun (id,expr) -> Printf.printf "Binding: %s to %s\n" id (show_expr expr) ) env; *)
+  | [], [] -> Some env
+  | Val (vid, vargs) :: xs, Binder id :: ys ->
+      matches xs ys ((id, Val (vid, vargs)) :: env)
   | Val (arg_id, sub_expr) :: _xs, C (cons_id, sub_cons) :: _ys ->
-      if arg_id = cons_id then matches sub_expr sub_cons env else false
-  | _ -> false
+      if arg_id = cons_id then matches sub_expr sub_cons env else None
+  | _ -> None
 
-let perform_match (called : expr list) (patterns : pattern list) : expr =
-  List.iter (fun c -> Printf.printf "Called : %s\n" (show_expr c)) called;
-
-  List.iter (fun c -> Printf.printf "Patterns: %s\n" (show_pattern c)) patterns;
+let perform_match (called : expr list) (patterns : pattern list) : expr * env =
+  List.iter (fun c -> Printf.printf "Called with Arg : %s\n" (show_expr c)) called;
+  print_endline "Possible Patterns: ";
+  List.iter (fun c -> Printf.printf "    %s\n" (show_pattern c)) patterns;
   (*
      in the case of length, we need to match the called arg with a pattern
      this is done by going through the list of patterns in order and finding
@@ -113,21 +121,43 @@ let perform_match (called : expr list) (patterns : pattern list) : expr =
      the initial call
 
   *)
-  let mo = first_match (fun (_, cons, _) -> matches called cons []) patterns in
-  let m =
+  let mo =
+    first_match
+      (fun (_, cons, _) ->
+        let matched = matches called cons [] in
+        (Option.is_some matched, matched))
+      patterns
+  in
+  let env, pattern =
     if Option.is_none mo then failwith "Pattern matching failed"
     else Option.get mo
   in
-  print_endline (show_pattern m);
+  print_endline "Env:";
+  print_endline (show_env env);
+  print_endline "Chosen Pattern:";
+  print_endline (show_pattern pattern);
 
+  (* Now we have the target pattern as well as the symbols that should be bound to args*)
+  (* TODO: Implement substitution
+     pattern -> env -> expr
+  *)
+  let rhs =
+    match pattern with
+    | _, _, Expr rhs -> rhs
+    | _, _, Hole -> failwith "UNIMPLEMENTED: Holes"
+  in
+  (rhs, env)
 
-  Val ("Z", [])
+let is_binder = function Binder _ -> true | C (_, _) -> false
 
-let is_binder = function
-  Binder _ -> true
-  | C (_, _) -> false
-
-(* let rec subst  (pat : pattern) (env: (id*expr) list): expr= *) 
+let rec subst (rhs : expr) (env : env) : expr =
+  match (rhs : expr) with
+  | App (e, args) -> App (subst e env, List.map (fun arg -> subst arg env) args)
+  | Id name -> (
+      match List.assoc_opt name env with
+      | Some binding_expr -> binding_expr
+      | None -> Id name)
+  | Val (cname, args) -> Val (cname, List.map (fun arg -> subst arg env) args)
 
 (*
 subst needs to fill the the binders in the target pattern in with values from args
@@ -153,9 +183,9 @@ So we go through the
 
 *)
 
-
 let rec eval (expr : expr) (env : typdef list * fn list * value list) =
   let _types, funcs, _values = env in
+  let inner_eval e = eval e env in
   match expr with
   | App (Id name, call_args) ->
       let _func_name, _func_type, (func_patterns : pattern list) =
@@ -167,17 +197,32 @@ let rec eval (expr : expr) (env : typdef list * fn list * value list) =
       then failwith "Called with wrong arity";
       let cbv_args = List.map (fun arg -> eval arg env) call_args in
       (* TODO: make this return the target pattern as well as the environment*)
-      let _target_pattern = perform_match cbv_args func_patterns in
+      let expr, env = perform_match cbv_args func_patterns in
+      let bound = subst expr env in
+      (* print_endline ("Bound:"); *)
+      (* print_endline (show_expr bound); *)
+      (* print_endline ("Eval again:"); *)
+      (* print_endline (show_expr (inner_eval bound)); *)
+      inner_eval bound
+
+
+
       (* TODO: implement substitute and call it here to obtain a RHS with proper arguments susbtituted*)
       (* TODO: then evaluate the resulting expression*)
-      Val ("Z", [])
   | Id _name -> Val ("UNIMPLEMENTED", [])
-  | Val (cname, args) -> Val (cname, args)
+  | Val (cname, []) -> Val (cname,[]) (* this is the terminating case *)
+  | Val (cname, args) -> Val (cname,List.map (inner_eval) args)
   | App (_, _) -> failwith "Tried to apply something thats not an identifier"
 
+let rec long_step e env =
+  let next = eval e env in
+  if e = next then e else long_step next env
+  
 let run (p : prog) =
   let types, funcs, expr = p in
-  eval expr (types, funcs, [])
+  let res = eval expr (types, funcs, []) in
+  print_endline "Result: ";
+  print_endline (show_expr res)
 (*
 EVALUATION
 
