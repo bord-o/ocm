@@ -1,0 +1,10 @@
+(menhir
+ (modules parser))
+ 
+(ocamllex lexer)
+
+(library
+ (inline_tests)
+ (preprocess
+  (pps ppx_deriving.show ppx_inline_test))
+ (name frontend))

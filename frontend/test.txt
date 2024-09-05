@@ -1,0 +1,7 @@
+type nat 
+  = Z
+  | S nat
+
+fun add : nat -> nat
+  = m Z -> m
+  | m (S n) -> S (add m n)

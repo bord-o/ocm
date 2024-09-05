@@ -91,8 +91,8 @@ let rec first_match predicate = function
 
 (* tries to match args to a pattern, if successful, return the bindings *)
 let rec matches (args : expr list) (cons : constructor list) (env : env) =
-  match (args, cons) with
   (* List.iter (fun (id,expr) -> Printf.printf "Binding: %s to %s\n" id (show_expr expr) ) env; *)
+  match (args, cons) with
   | [], [] -> Some env
   | Val (vid, vargs) :: xs, Binder id :: ys ->
       matches xs ys ((id, Val (vid, vargs)) :: env)
@@ -136,11 +136,11 @@ let perform_match (called : expr list) (patterns : pattern list) : expr * env =
     if Option.is_none mo then failwith "Pattern matching failed"
     else Option.get mo
   in
+
   (* print_endline "Env:"; *)
   (* print_endline (show_env env); *)
   (* print_endline "Chosen Pattern:"; *)
   (* print_endline (show_pattern pattern); *)
-
   let rhs =
     match pattern with
     | _, _, Expr rhs -> rhs
@@ -197,16 +197,15 @@ let rec eval (expr : expr) (env : typdef list * fn list * value list) =
       let expr, env = perform_match cbv_args func_patterns in
       let bound = subst expr env in
       inner_eval bound
-
   | Id _name -> Val ("UNIMPLEMENTED", [])
-  | Val (cname, []) -> Val (cname,[]) (* this is the terminating case *)
-  | Val (cname, args) -> Val (cname,List.map (inner_eval) args)
+  | Val (cname, []) -> Val (cname, []) (* this is the terminating case *)
+  | Val (cname, args) -> Val (cname, List.map inner_eval args)
   | App (_, _) -> failwith "Tried to apply something thats not an identifier"
 
 let rec long_step e env =
   let next = eval e env in
   if e = next then e else long_step next env
-  
+
 let run (p : prog) =
   let types, funcs, expr = p in
   let res = eval expr (types, funcs, []) in

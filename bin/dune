@@ -1,4 +1,4 @@
 (executable
  (public_name ocm)
  (name main)
- (libraries ocm))
+ (libraries ocm frontend))
