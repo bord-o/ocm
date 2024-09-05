@@ -19,12 +19,18 @@ type bool
   = True
   | False
 
-fun bool_and : bool  bool -> bool
+fun bool_and : bool  bool  -> bool
              = True  True  -> True
              | True  False -> False
              | False True  -> False
              | False False -> False
 
+fun modus_ponens: bool  bool  -> bool
+             = True  x     -> bool_and True True
+             | True  False -> False
+             | False True  -> False
+             | False False -> False
+             
 fun add : natural -> natural -> natural
   | add n Zero -> n
   | add n (Successor m) -> Successor (add n m)
@@ -84,8 +90,6 @@ let rec first_match predicate = function
       else first_match predicate xs
 
 (* tries to match args to a pattern, if successful, return the bindings *)
-(* TODO: Refactor this to return option *)
-
 let rec matches (args : expr list) (cons : constructor list) (env : env) =
   match (args, cons) with
   (* List.iter (fun (id,expr) -> Printf.printf "Binding: %s to %s\n" id (show_expr expr) ) env; *)
@@ -97,9 +101,9 @@ let rec matches (args : expr list) (cons : constructor list) (env : env) =
   | _ -> None
 
 let perform_match (called : expr list) (patterns : pattern list) : expr * env =
-  List.iter (fun c -> Printf.printf "Called with Arg : %s\n" (show_expr c)) called;
-  print_endline "Possible Patterns: ";
-  List.iter (fun c -> Printf.printf "    %s\n" (show_pattern c)) patterns;
+  (* List.iter (fun c -> Printf.printf "Called with Arg : %s\n" (show_expr c)) called; *)
+  (* print_endline "Possible Patterns: "; *)
+  (* List.iter (fun c -> Printf.printf "    %s\n" (show_pattern c)) patterns; *)
   (*
      in the case of length, we need to match the called arg with a pattern
      this is done by going through the list of patterns in order and finding
@@ -132,15 +136,11 @@ let perform_match (called : expr list) (patterns : pattern list) : expr * env =
     if Option.is_none mo then failwith "Pattern matching failed"
     else Option.get mo
   in
-  print_endline "Env:";
-  print_endline (show_env env);
-  print_endline "Chosen Pattern:";
-  print_endline (show_pattern pattern);
+  (* print_endline "Env:"; *)
+  (* print_endline (show_env env); *)
+  (* print_endline "Chosen Pattern:"; *)
+  (* print_endline (show_pattern pattern); *)
 
-  (* Now we have the target pattern as well as the symbols that should be bound to args*)
-  (* TODO: Implement substitution
-     pattern -> env -> expr
-  *)
   let rhs =
     match pattern with
     | _, _, Expr rhs -> rhs
@@ -179,8 +179,6 @@ length (Cons x (Cons x2 xs)) -> S (length (Cons x2 xs))
 We need to match x -> Z and x2 -> Z and xs -> Cons Z Nil
 
 So we go through the 
-
-
 *)
 
 let rec eval (expr : expr) (env : typdef list * fn list * value list) =
@@ -196,19 +194,10 @@ let rec eval (expr : expr) (env : typdef list * fn list * value list) =
         <> List.length call_args
       then failwith "Called with wrong arity";
       let cbv_args = List.map (fun arg -> eval arg env) call_args in
-      (* TODO: make this return the target pattern as well as the environment*)
       let expr, env = perform_match cbv_args func_patterns in
       let bound = subst expr env in
-      (* print_endline ("Bound:"); *)
-      (* print_endline (show_expr bound); *)
-      (* print_endline ("Eval again:"); *)
-      (* print_endline (show_expr (inner_eval bound)); *)
       inner_eval bound
 
-
-
-      (* TODO: implement substitute and call it here to obtain a RHS with proper arguments susbtituted*)
-      (* TODO: then evaluate the resulting expression*)
   | Id _name -> Val ("UNIMPLEMENTED", [])
   | Val (cname, []) -> Val (cname,[]) (* this is the terminating case *)
   | Val (cname, args) -> Val (cname,List.map (inner_eval) args)
