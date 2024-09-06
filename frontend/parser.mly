@@ -1,39 +1,38 @@
-/**************************************************************************/
-/*                                                                        */
-/*  Menhir                                                                */
-/*                                                                        */
-/*  François Pottier, INRIA Rocquencourt                                  */
-/*  Yann Régis-Gianas, PPS, Université Paris Diderot                      */
-/*                                                                        */
-/*  Copyright 2005-2008 Institut National de Recherche en Informatique    */
-/*  et en Automatique. All rights reserved. This file is distributed      */
-/*  under the terms of the Q Public License version 1.0, with the change  */
-/*  described in file LICENSE.                                            */
-/*                                                                        */
-/**************************************************************************/
-
+%{
+	open Ocm
+%}
 %token <int> INT
 %token SEMICOLON
 %token EOF
-%token <string> CONSTRUCTOR 
-%token <string> IDENT
-%token TYPE EQ BAR ARROW COLON LPAREN RPAREN QMARK
+%token <Ocm.capital_id> CONSTRUCTOR 
+%token <Ocm.id> IDENT
+%token TYPE EQ BAR ARROW COLON LPAREN RPAREN QMARK FUN
 
 /* changed the type, because the script does not return one value, but all
  * results which are calculated in the file */
-%start <int> main
+%start <prog> program
 
 %%
+program:
+	t=typedefs EOF {(t, [], Id "test")}
 
-/* TODO: write the grammar */
-/* the calculated results are accumalted in an OCaml int list */
-main:
-| stmt = statement EOF { stmt }
+typedefs:
+	t=typedef {[t]}
+	| t=typedef ts=typedefs {t::ts}
 
-/* expressions end with a semicolon, not with a newline character */
-statement:
-| e = expr SEMICOLON { e }
+/* type typdef = id * (capital_id * id list) list [@@deriving show] */
+typedef:
+	TYPE i=IDENT EQ cons=type_constructors  {i, cons}
 
-expr:
-| i = INT
-    { i }
+type_constructors:
+	c=constructor_with_args {[c]}
+	| c=constructor_with_args BAR cs=type_constructors {c::cs}
+
+constructor_with_args:
+	c=CONSTRUCTOR a=args {(c, a)}
+	| c=CONSTRUCTOR {(c, [])}
+
+args:
+	i=IDENT {[i]}
+	| i=IDENT a=args {i::a}
+	

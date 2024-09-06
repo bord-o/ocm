@@ -19,9 +19,8 @@
 }
 
 rule token = parse
-| [' ' '\t' '\n'] (* also ignore newlines, not only whitespace and tabs *)
-    { token lexbuf }
-(* add the semicolon as a new token *)
+[' ' '\t' '\r'] { token lexbuf }
+| '\n'            { Lexing.new_line lexbuf; token lexbuf }
 | ';'
     { SEMICOLON }
 | ['0'-'9']+ as i
@@ -30,12 +29,14 @@ rule token = parse
     { LPAREN }
 | ')'
     { RPAREN }
+| "type"
+    { TYPE }
+| "fun"
+    { FUN }
 | ['A'-'Z']['a'-'z']* as capitalid
     { CONSTRUCTOR capitalid }
 | ['a'-'z']+ as lowerid
     { IDENT lowerid }
-| "type"
-    { TYPE}
 | "->"
     { ARROW}
 | '='

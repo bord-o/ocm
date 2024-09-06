@@ -7,7 +7,7 @@ let main () =
   let input = In_channel.with_open_text filename In_channel.input_all in
   let filebuf = Lexing.from_string input in
   try
-    print_int (Parser.main Lexer.token filebuf)
+    print_endline (Ocm.show_prog (Parser.program Lexer.token filebuf))
   with
   | Lexer.Error msg ->
       Printf.eprintf "%s%!" msg
