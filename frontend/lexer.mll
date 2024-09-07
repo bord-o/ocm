@@ -45,6 +45,8 @@ rule token = parse
     { BAR }
 | ':'
     { COLON }
+| ','
+    { COMMA }
 | '?'
     { QMARK }
 | eof

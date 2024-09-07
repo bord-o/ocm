@@ -6,15 +6,72 @@
 %token EOF
 %token <Ocm.capital_id> CONSTRUCTOR 
 %token <Ocm.id> IDENT
-%token TYPE EQ BAR ARROW COLON LPAREN RPAREN QMARK FUN
+%token TYPE EQ BAR ARROW COLON LPAREN RPAREN QMARK FUN COMMA
 
-/* changed the type, because the script does not return one value, but all
- * results which are calculated in the file */
+/* 
+
+type expr =
+  | App of expr * expr list (* an application *)
+  | Id of id (* this is a function defined above *)
+  | Val of
+      capital_id
+      * expr list (* This is an instantiation of a type using a constructor *)
+[@@deriving show]
+
+type rhs = Expr of expr | Hole [@@deriving show]
+type pattern = id * constructor list * rhs [@@deriving show]
+type fn = id * typ * pattern list [@@deriving show]
+
+type constructor = C of capital_id * constructor list | Binder of id
+
+
+*/
 %start <prog> program
 
 %%
 program:
-	t=typedefs EOF {(t, [], Id "test")}
+	f=fundefs EOF {([], f, Id "test")}
+
+fundefs:
+	FUN i=IDENT COLON f=funtype EQ ps=patterns {[i, f, List.map (fun (clist, rhs) -> (i, clist, rhs)) ps]}
+
+funtype:
+	t1=IDENT ARROW t2=IDENT {Arr ([Lit t1], Lit t2)}
+
+patterns:
+	p=pattern {[p]}
+	| p=pattern BAR ps=patterns {p::ps}
+
+pattern:
+	p=pattern_lhs_list ARROW r=rhs {(p,r)}
+
+rhs:
+	i=IDENT {Expr(Id i)}
+
+pattern_lhs_list:
+	p=pattern_lhs {[p]}
+	| p=pattern_lhs COMMA ps=pattern_lhs_list {p::ps}
+
+pattern_lhs:
+	b=binder {b}
+	| c=pattern_constructor {c}
+
+pattern_constructor:
+	c=CONSTRUCTOR {C(c, [])}
+	| c=CONSTRUCTOR args=cargs {C (c, args)}
+
+cargs:
+	c=carg {[c]}
+	| c=carg cs=cargs {c::cs}
+
+carg:
+	LPAREN pc=pattern_constructor RPAREN {pc}
+	| b=binder {b}
+	| c=CONSTRUCTOR {C(c, [])}
+
+binder:
+	i=IDENT {Binder i}
+
 
 typedefs:
 	t=typedef {[t]}
