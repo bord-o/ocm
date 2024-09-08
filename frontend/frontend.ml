@@ -12,7 +12,7 @@ let main () =
   | Lexer.Error msg ->
       Printf.eprintf "%s%!" msg
   | Parser.Error ->
-      Printf.eprintf "At offset %d: syntax error.\n%!" (Lexing.lexeme_start filebuf)
+      Printf.eprintf "At line %d, offset: %d: syntax error.\n%!" ((Lexing.lexeme_start_p filebuf).pos_lnum) (((Lexing.lexeme_start_p filebuf).pos_cnum) -  ((Lexing.lexeme_start_p filebuf).pos_bol))
 
 
 

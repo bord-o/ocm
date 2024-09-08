@@ -4,4 +4,7 @@ fun add : nat -> nat
   | Z x y Z, x, Y -> test
   | Z (Y x y) w Z, x, Y -> test
   | binder -> ?
-  | Z, binder, Y -> Test arg
+  | Z, binder, Y -> Test arg (argtwo)
+  | Z, binder, Y -> (Test arg (argtwo))
+  | Z, binder, Y -> Test arg (application farg fargtwo)
+  | Z, binder, Y -> (Test arg) (argtwo)

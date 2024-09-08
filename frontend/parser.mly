@@ -54,10 +54,16 @@ exprs:
 	| e=expr es=exprs {e::es}
 
 expr:
+	e=expr_noparen  {e}
+	| e=expr_paren {e}
+
+expr_noparen:
 	i=idlit {i}
 	| v=valu {v}
 	| a=app {a}
-//TODO: figure out application and constructor application
+
+expr_paren:
+	LPAREN e=expr RPAREN {e}
 
 app:
 	e=expr es=exprs {App(e, es)}
