@@ -1,5 +1,7 @@
 (menhir
- (modules parser))
+ (modules parser)
+ (explain true)
+ )
  
 (ocamllex lexer)
 

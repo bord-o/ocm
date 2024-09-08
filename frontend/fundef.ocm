@@ -1,14 +1,6 @@
-type bool 
-	= True 
-	| False 
-
-type nat
-	= Z
-	| S nat
-
 fun add : nat -> nat 
   = Z, S -> test
-  | S Z, x -> test
+  | Z, x -> test
   | Z x y Z, x, Y -> test
   | Z (Y x y) w Z, x, Y -> test
   | binder -> ?
@@ -16,6 +8,3 @@ fun add : nat -> nat
   | Z, binder, Y -> (Test arg (argtwo))
   | Z, binder, Y -> Test arg (application farg fargtwo)
   | Z, binder, Y -> (Test arg) (argtwo)
-  | Z, binder, Y -> Test (arg argtwo);
-
-add (S Z)

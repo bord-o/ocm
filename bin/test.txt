@@ -1,0 +1,50 @@
+type bool 
+  = True 
+  | False 
+
+type nat
+  = Z
+  | S nat
+
+type value
+  = A
+  | B
+  | C
+  | D
+  | E
+
+type valuelist
+  = Nil
+  | Cons value valuelist
+
+fun booland : bool -> bool
+  = True, True -> True
+  | False, False -> False
+  | False, True -> False
+  | True, False -> False
+
+fun add : nat, nat -> nat
+  = m, Z -> m
+  | m, S n -> S (add m n)
+
+fun reverse : valuelist, valuelist -> valuelist 
+  = acc, Nil -> acc
+  | acc, Cons x xs -> reverse (Cons x acc) xs
+
+fun filter: filter, valuelist -> valuelist
+  = f, Nil -> False
+  | f, Cons x xs -> f x
+
+fun isletterc : value -> bool 
+  = A -> False
+  | B -> False
+  | C -> True
+  | D -> False
+  | E -> False
+;
+
+filter (isletterc) (Cons (C) (Nil))
+
+
+
+

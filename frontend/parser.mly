@@ -1,5 +1,9 @@
 %{
 	open Ocm
+
+	type funOrType = 
+		F of fn
+		| T of typdef
 %}
 %token <int> INT
 %token SEMICOLON
@@ -30,13 +34,29 @@ type constructor = C of capital_id * constructor list | Binder of id
 
 %%
 program:
-	f=fundefs EOF {([], f, Id "test")}
+	tfs=type_or_fun_defs SEMICOLON e=expr EOF {
+	(List.filter_map (fun def -> match def with T d -> Some d | _ -> None ) tfs,
+	List.filter_map (fun def -> match def with F d -> Some d | _ -> None ) tfs,
+	 e)
+	}
 
-fundefs:
-	FUN i=IDENT COLON f=funtype EQ ps=patterns {[i, f, List.map (fun (clist, rhs) -> (i, clist, rhs)) ps]}
+type_or_fun_def:
+	t=typedef {T t}
+	| f=fundef {F f}
+
+type_or_fun_defs:
+	tf=type_or_fun_def {[tf]}
+	| tf=type_or_fun_def tfs=type_or_fun_defs {tf::tfs}
+
+fundef:
+	FUN i=IDENT COLON f=funtype EQ ps=patterns {i, f, List.map (fun (clist, rhs) -> (i, clist, rhs)) ps}
 
 funtype:
-	t1=IDENT ARROW t2=IDENT {Arr ([Lit t1], Lit t2)}
+	ts=typeargs ARROW t2=IDENT {Arr ((List.map (fun i -> Lit i) ts), Lit t2)}
+
+typeargs:
+	t=IDENT {[t]}
+	| t=IDENT COMMA ts=typeargs {t::ts}
 
 patterns:
 	p=pattern {[p]}
@@ -51,7 +71,7 @@ rhs:
 
 exprs:
 	e=expr {[e]}
-	| e=expr es=exprs {e::es}
+	| e=expr es=exprs {e::es} 
 
 expr:
 	e=expr_noparen  {e}
@@ -66,10 +86,13 @@ expr_paren:
 	LPAREN e=expr RPAREN {e}
 
 app:
-	e=expr es=exprs {App(e, es)}
+	e=expr es=exprs {App(e, es)}  
+	// TODO: This is not an arbitrary expression, if it is a Val it should be in parentheses 
+	// This reduction is solved in the desired way automatically by menhir right now so I'm going to leave it
 
 valu:
-	c=CONSTRUCTOR es=exprs {Val(c, es)}
+	c=CONSTRUCTOR {Val(c, [])}
+	| c=CONSTRUCTOR es=exprs {Val(c, es)} 
 
 idlit:
 	i=IDENT {Id i}

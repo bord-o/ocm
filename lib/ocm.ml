@@ -92,12 +92,24 @@ let rec first_match predicate = function
 (* tries to match args to a pattern, if successful, return the bindings *)
 let rec matches (args : expr list) (cons : constructor list) (env : env) =
   (* List.iter (fun (id,expr) -> Printf.printf "Binding: %s to %s\n" id (show_expr expr) ) env; *)
+  (* print_endline "Called with arg: "; *)
+  (* List.iter (fun c -> Printf.printf "    %s\n" (show_expr c)) args; *)
+  (* print_endline "and Constructors: "; *)
+  (* List.iter (fun c -> Printf.printf "    %s\n" (show_constructor c)) cons; *)
+
   match (args, cons) with
   | [], [] -> Some env
   | Val (vid, vargs) :: xs, Binder id :: ys ->
       matches xs ys ((id, Val (vid, vargs)) :: env)
-  | Val (arg_id, sub_expr) :: _xs, C (cons_id, sub_cons) :: _ys ->
-      if arg_id = cons_id then matches sub_expr sub_cons env else None
+
+
+  | Val (arg_id, sub_expr) :: xs, C (cons_id, sub_cons) :: ys ->
+      let sub = if arg_id = cons_id then ( matches sub_expr sub_cons env) else None in
+      (match sub with
+      None -> None
+      | Some e -> matches xs ys (e@env))
+
+    (* TODO: we aren't matching all of the arguments in a pattern, just the first and sub arguments in the first; add matching and unification of env for all args*)
   | _ -> None
 
 let perform_match (called : expr list) (patterns : pattern list) : expr * env =
@@ -133,7 +145,7 @@ let perform_match (called : expr list) (patterns : pattern list) : expr * env =
       patterns
   in
   let env, pattern =
-    if Option.is_none mo then failwith "Pattern matching failed"
+    if Option.is_none mo then (print_endline "args not matched: "; print_endline (List.fold_left (fun acc s -> acc^(show_expr s)^"\n") "" called );  failwith "Pattern matching failed")
     else Option.get mo
   in
 
@@ -200,7 +212,7 @@ let rec eval (expr : expr) (env : typdef list * fn list * value list) =
   | Id _name -> Val ("UNIMPLEMENTED", [])
   | Val (cname, []) -> Val (cname, []) (* this is the terminating case *)
   | Val (cname, args) -> Val (cname, List.map inner_eval args)
-  | App (_, _) -> failwith "Tried to apply something thats not an identifier"
+  | App (s, _) -> (Printf.printf "applying %s\n" (show_expr s) ;failwith "Tried to apply something thats not an identifier")
 
 let rec long_step e env =
   let next = eval e env in
