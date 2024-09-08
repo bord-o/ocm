@@ -3,5 +3,5 @@ fun add : nat -> nat
   | Z, x -> test
   | Z x y Z, x, Y -> test
   | Z (Y x y) w Z, x, Y -> test
-  | binder -> test
-  | Z, binder, Y -> test
+  | binder -> ?
+  | Z, binder, Y -> Test arg

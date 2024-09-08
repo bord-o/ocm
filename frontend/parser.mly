@@ -46,7 +46,27 @@ pattern:
 	p=pattern_lhs_list ARROW r=rhs {(p,r)}
 
 rhs:
-	i=IDENT {Expr(Id i)}
+	e=expr {Expr e}
+	| QMARK {Hole}
+
+exprs:
+	e=expr {[e]}
+	| e=expr es=exprs {e::es}
+
+expr:
+	i=idlit {i}
+	| v=valu {v}
+	| a=app {a}
+//TODO: figure out application and constructor application
+
+app:
+	e=expr es=exprs {App(e, es)}
+
+valu:
+	c=CONSTRUCTOR es=exprs {Val(c, es)}
+
+idlit:
+	i=IDENT {Id i}
 
 pattern_lhs_list:
 	p=pattern_lhs {[p]}
