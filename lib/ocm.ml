@@ -108,8 +108,9 @@ let rec matches (args : expr list) (cons : constructor list) (env : env) =
       (match sub with
       None -> None
       | Some e -> matches xs ys (e@env))
+  | Id name ::xs, Binder id ::ys -> 
+      matches xs ys ((id, Id name) :: env)
 
-    (* TODO: we aren't matching all of the arguments in a pattern, just the first and sub arguments in the first; add matching and unification of env for all args*)
   | _ -> None
 
 let perform_match (called : expr list) (patterns : pattern list) : expr * env =
@@ -204,12 +205,12 @@ let rec eval (expr : expr) (env : typdef list * fn list * value list) =
       if
         List.length ((fun (_, x, _) -> x) (List.hd func_patterns))
         <> List.length call_args
-      then failwith "Called with wrong arity";
+      then failwith (Printf.sprintf "Called with wrong arity: %s" name);
       let cbv_args = List.map (fun arg -> eval arg env) call_args in
       let expr, env = perform_match cbv_args func_patterns in
       let bound = subst expr env in
       inner_eval bound
-  | Id _name -> Val ("UNIMPLEMENTED", [])
+  | Id n-> Id n
   | Val (cname, []) -> Val (cname, []) (* this is the terminating case *)
   | Val (cname, args) -> Val (cname, List.map inner_eval args)
   | App (s, _) -> (Printf.printf "applying %s\n" (show_expr s) ;failwith "Tried to apply something thats not an identifier")

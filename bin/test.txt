@@ -31,20 +31,39 @@ fun reverse : valuelist, valuelist -> valuelist
   = acc, Nil -> acc
   | acc, Cons x xs -> reverse (Cons x acc) xs
 
-fun filter: filter, valuelist -> valuelist
-  = f, Nil -> False
-  | f, Cons x xs -> f x
+fun ite : bool, valuelist, valuelist -> valuelist
+  = True, a, b -> a
+  | False, a, b -> b
 
-fun isletterc : value -> bool 
-  = A -> False
+fun filter: filter, valuelist -> valuelist
+  = f, Nil -> Nil
+  | f, Cons x xs -> ite (f x) (Cons (x) (filter f xs )) (filter f xs)
+
+fun goodletter : value -> bool 
+  = A -> True
   | B -> False
   | C -> True
   | D -> False
   | E -> False
+
+fun valueeq : value, value -> bool
+  = A, A -> True
+  | B, B -> True
+  | C, C -> True
+  | D, D -> True
+  | E, E -> True
+  | x, y -> False
+
+fun not : bool -> bool
+  = True -> False
+  | False -> True
+
+fun vlisteq : valuelist, valuelist -> bool
+  = Nil, Nil -> True
+  | Cons x xs, Cons y ys -> booland (valueeq x y) (vlisteq xs ys)
+
+fun ispalindrome : valuelist -> bool 
+  = l -> vlisteq (l) (reverse (Nil) l)
 ;
 
-filter (isletterc) (Cons (C) (Nil))
-
-
-
-
+ispalindrome (Cons (C) (Cons (B) (Cons (C) Nil)))
